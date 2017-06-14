@@ -49,7 +49,8 @@ public class ConnectActivity extends Activity {
 
   private ImageButton connectButton;
   private ImageButton addFavoriteButton;
-  private EditText roomEditText;
+  private EditText roomEditText1;
+  private EditText roomEditText2;
   private ListView roomListView;
   private SharedPreferences sharedPref;
   private String keyprefVideoCallEnabled;
@@ -133,8 +134,9 @@ public class ConnectActivity extends Activity {
 
     setContentView(R.layout.activity_connect);
 
-    roomEditText = (EditText) findViewById(R.id.room_edittext);
-    roomEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+    roomEditText1 = (EditText) findViewById(R.id.room_edittext_1);
+    roomEditText2 = (EditText) findViewById(R.id.room_edittext_2);
+    roomEditText1.setOnEditorActionListener(new TextView.OnEditorActionListener() {
       @Override
       public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
         if (i == EditorInfo.IME_ACTION_DONE) {
@@ -144,7 +146,7 @@ public class ConnectActivity extends Activity {
         return false;
       }
     });
-    roomEditText.requestFocus();
+    roomEditText1.requestFocus();
 
     roomListView = (ListView) findViewById(R.id.room_listview);
     roomListView.setEmptyView(findViewById(android.R.id.empty));
@@ -163,7 +165,7 @@ public class ConnectActivity extends Activity {
       boolean useValuesFromIntent =
           intent.getBooleanExtra(CallActivity.EXTRA_USE_VALUES_FROM_INTENT, false);
       String room = sharedPref.getString(keyprefRoom, "");
-      connectToRoom(room, true, loopback, useValuesFromIntent, runTimeMs);
+     // connectToRoom(room, true, loopback, useValuesFromIntent, runTimeMs);
     }
   }
 
@@ -208,7 +210,7 @@ public class ConnectActivity extends Activity {
       startActivity(intent);
       return true;
     } else if (item.getItemId() == R.id.action_loopback) {
-      connectToRoom(null, false, true, false, 0);
+      //connectToRoom(null, false, true, false, 0);
       return true;
     } else {
       return super.onOptionsItemSelected(item);
@@ -218,7 +220,7 @@ public class ConnectActivity extends Activity {
   @Override
   public void onPause() {
     super.onPause();
-    String room = roomEditText.getText().toString();
+    String room = roomEditText1.getText().toString();
     String roomListJson = new JSONArray(roomList).toString();
     SharedPreferences.Editor editor = sharedPref.edit();
     editor.putString(keyprefRoom, room);
@@ -230,7 +232,7 @@ public class ConnectActivity extends Activity {
   public void onResume() {
     super.onResume();
     String room = sharedPref.getString(keyprefRoom, "");
-    roomEditText.setText(room);
+    roomEditText1.setText(room);
     roomList = new ArrayList<String>();
     String roomListJson = sharedPref.getString(keyprefRoomList, null);
     if (roomListJson != null) {
@@ -317,13 +319,13 @@ public class ConnectActivity extends Activity {
     }
   }
 
-  private void connectToRoom(String roomId, boolean commandLineRun, boolean loopback,
+  private void connectToRoom(String room1, String room2, boolean commandLineRun, boolean loopback,
       boolean useValuesFromIntent, int runTimeMs) {
     this.commandLineRun = commandLineRun;
 
     // roomId is random for loopback.
     if (loopback) {
-      roomId = Integer.toString((new Random()).nextInt(100000000));
+      room1 = Integer.toString((new Random()).nextInt(100000000));
     }
 
     String roomUrl = sharedPref.getString(
@@ -439,7 +441,7 @@ public class ConnectActivity extends Activity {
         CallActivity.EXTRA_VIDEO_CAPTUREQUALITYSLIDER_ENABLED,
         R.string.pref_capturequalityslider_default, useValuesFromIntent);
 
-    // Get video and audio start bitrate.
+    // Get video and audio onStart bitrate.
     int videoStartBitrate = 0;
     if (useValuesFromIntent) {
       videoStartBitrate = getIntent().getIntExtra(CallActivity.EXTRA_VIDEO_BITRATE, 0);
@@ -495,12 +497,14 @@ public class ConnectActivity extends Activity {
         CallActivity.EXTRA_PROTOCOL, R.string.pref_data_protocol_default, useValuesFromIntent);
 
     // Start AppRTCMobile activity.
-    Log.d(TAG, "Connecting to room " + roomId + " at URL " + roomUrl);
+    Log.d(TAG, "Connecting to room1 " + room1 + " at URL " + roomUrl);
+    Log.d(TAG, "Connecting to room2 " + room2 + " at URL " + roomUrl);
     if (validateUrl(roomUrl)) {
       Uri uri = Uri.parse(roomUrl);
       Intent intent = new Intent(this, CallActivity.class);
       intent.setData(uri);
-      intent.putExtra(CallActivity.EXTRA_ROOMID, roomId);
+      intent.putExtra(CallActivity.EXTRA_ROOMID_1, room1);
+      intent.putExtra(CallActivity.EXTRA_ROOMID_2, room2);
       intent.putExtra(CallActivity.EXTRA_LOOPBACK, loopback);
       intent.putExtra(CallActivity.EXTRA_VIDEO_CALL, videoCallEnabled);
       intent.putExtra(CallActivity.EXTRA_SCREENCAPTURE, useScreencapture);
@@ -594,14 +598,14 @@ public class ConnectActivity extends Activity {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
           String roomId = ((TextView) view).getText().toString();
-          connectToRoom(roomId, false, false, false, 0);
+          //connectToRoom(roomId, false, false, false, 0);
         }
       };
 
   private final OnClickListener addFavoriteListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
-      String newRoom = roomEditText.getText().toString();
+      String newRoom = roomEditText1.getText().toString();
       if (newRoom.length() > 0 && !roomList.contains(newRoom)) {
         adapter.add(newRoom);
         adapter.notifyDataSetChanged();
@@ -612,7 +616,7 @@ public class ConnectActivity extends Activity {
   private final OnClickListener connectListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
-      connectToRoom(roomEditText.getText().toString(), false, false, false, 0);
+      connectToRoom(roomEditText1.getText().toString(), roomEditText2.getText().toString(), false, false, false, 0);
     }
   };
 }

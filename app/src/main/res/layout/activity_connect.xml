@@ -22,11 +22,12 @@
         android:layout_marginBottom="8dp">
 
         <EditText
-            android:id="@+id/room_edittext"
+            android:id="@+id/room_edittext_1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:singleLine="true"
+            android:text="deano1"
             android:imeOptions="actionDone"
             android:inputType="text"/>
 
@@ -44,6 +45,15 @@
             android:contentDescription="@string/add_favorite_description"
             android:background="@android:drawable/ic_input_add" />
     </LinearLayout>
+
+    <EditText
+        android:id="@+id/room_edittext_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="deano2"
+        android:singleLine="true"
+        android:imeOptions="actionDone"
+        android:inputType="text"/>
 
     <TextView
         android:id="@+id/room_listview_description"

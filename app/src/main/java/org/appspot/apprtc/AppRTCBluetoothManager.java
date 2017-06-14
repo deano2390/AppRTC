@@ -48,7 +48,7 @@ public class AppRTCBluetoothManager {
   public enum State {
     // Bluetooth is not available; no adapter or Bluetooth is off.
     UNINITIALIZED,
-    // Bluetooth error happened when trying to start Bluetooth.
+    // Bluetooth error happened when trying to onStart Bluetooth.
     ERROR,
     // Bluetooth proxy object for the Headset profile exists, but no connected headset devices,
     // SCO is not started or disconnected.
@@ -219,9 +219,9 @@ public class AppRTCBluetoothManager {
    * Activates components required to detect Bluetooth devices and to enable
    * BT SCO (audio is routed via BT SCO) for the headset profile. The end
    * state will be HEADSET_UNAVAILABLE but a state machine has started which
-   * will start a state change sequence where the final outcome depends on
+   * will onStart a state change sequence where the final outcome depends on
    * if/when the BT headset is enabled.
-   * Example of state change sequence when start() is called while BT device
+   * Example of state change sequence when onStart() is called while BT device
    * is connected and enabled:
    *   UNINITIALIZED --> HEADSET_UNAVAILABLE --> HEADSET_AVAILABLE -->
    *   SCO_CONNECTING --> SCO_CONNECTED <==> audio is now routed via BT SCO.
@@ -230,7 +230,7 @@ public class AppRTCBluetoothManager {
    */
   public void start() {
     ThreadUtils.checkIsOnMainThread();
-    Log.d(TAG, "start");
+    Log.d(TAG, "onStart");
     if (!hasPermission(apprtcContext, android.Manifest.permission.BLUETOOTH)) {
       Log.w(TAG, "Process (pid=" + Process.myPid() + ") lacks BLUETOOTH permission");
       return;
@@ -272,7 +272,7 @@ public class AppRTCBluetoothManager {
             + stateToString(bluetoothAdapter.getProfileConnectionState(BluetoothProfile.HEADSET)));
     Log.d(TAG, "Bluetooth proxy for headset profile has started");
     bluetoothState = State.HEADSET_UNAVAILABLE;
-    Log.d(TAG, "start done: BT state=" + bluetoothState);
+    Log.d(TAG, "onStart done: BT state=" + bluetoothState);
   }
 
   /** Stops and closes all components related to Bluetooth audio. */
@@ -447,7 +447,7 @@ public class AppRTCBluetoothManager {
   }
 
   /**
-   * Called when start of the BT SCO channel takes too long time. Usually
+   * Called when onStart of the BT SCO channel takes too long time. Usually
    * happens when the BT device has been turned on during an ongoing call.
    */
   private void bluetoothTimeout() {

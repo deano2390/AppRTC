@@ -180,7 +180,7 @@ public class AppRTCAudioManager {
 
     // Create and initialize the proximity sensor.
     // Tablet devices (e.g. Nexus 7) does not support proximity sensors.
-    // Note that, the sensor will not be active until start() has been called.
+    // Note that, the sensor will not be active until onStart() has been called.
     proximitySensor = AppRTCProximitySensor.create(context, new Runnable() {
       // This method will be called each time a state change is detected.
       // Example: user holds his hand over the device (closer than ~5 cm),
@@ -195,7 +195,7 @@ public class AppRTCAudioManager {
   }
 
   public void start(AudioManagerEvents audioManagerEvents) {
-    Log.d(TAG, "start");
+    Log.d(TAG, "onStart");
     ThreadUtils.checkIsOnMainThread();
     if (amState == AudioManagerState.RUNNING) {
       Log.e(TAG, "AudioManager is already active");
@@ -276,7 +276,7 @@ public class AppRTCAudioManager {
     selectedAudioDevice = AudioDevice.NONE;
     audioDevices.clear();
 
-    // Initialize and start Bluetooth if a BT device is available or initiate
+    // Initialize and onStart Bluetooth if a BT device is available or initiate
     // detection of new (enabled) BT devices.
     bluetoothManager.start();
 
@@ -504,7 +504,7 @@ public class AppRTCAudioManager {
       userSelectedAudioDevice = AudioDevice.SPEAKER_PHONE;
     }
 
-    // Need to start Bluetooth if it is available and user either selected it explicitly or
+    // Need to onStart Bluetooth if it is available and user either selected it explicitly or
     // user did not select any output device.
     boolean needBluetoothAudioStart =
         bluetoothManager.getState() == AppRTCBluetoothManager.State.HEADSET_AVAILABLE
@@ -522,7 +522,7 @@ public class AppRTCAudioManager {
     if (bluetoothManager.getState() == AppRTCBluetoothManager.State.HEADSET_AVAILABLE
         || bluetoothManager.getState() == AppRTCBluetoothManager.State.SCO_CONNECTING
         || bluetoothManager.getState() == AppRTCBluetoothManager.State.SCO_CONNECTED) {
-      Log.d(TAG, "Need BT audio: start=" + needBluetoothAudioStart + ", "
+      Log.d(TAG, "Need BT audio: onStart=" + needBluetoothAudioStart + ", "
               + "stop=" + needBluetoothAudioStop + ", "
               + "BT state=" + bluetoothManager.getState());
     }
@@ -534,7 +534,7 @@ public class AppRTCAudioManager {
     }
 
     if (needBluetoothAudioStart && !needBluetoothAudioStop) {
-      // Attempt to start Bluetooth SCO audio (takes a few second to start).
+      // Attempt to onStart Bluetooth SCO audio (takes a few second to onStart).
       if (!bluetoothManager.startScoAudio()) {
         // Remove BLUETOOTH from list of available devices since SCO failed.
         audioDevices.remove(AudioDevice.BLUETOOTH);

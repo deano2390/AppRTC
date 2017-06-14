@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 /**
  * Implementation of AppRTCClient that uses direct TCP connection as the signaling channel.
  * This eliminates the need for an external server. This class does not support loopback
- * connections.
+ * connectionList.
  */
 public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChannelEvents {
   private static final String TAG = "DirectRTCClient";
@@ -77,7 +77,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
     this.connectionParameters = connectionParameters;
 
     if (connectionParameters.loopback) {
-      reportError("Loopback connections aren't supported by DirectRTCClient.");
+      reportError("Loopback connectionList aren't supported by DirectRTCClient.");
     }
 
     executor.execute(new Runnable() {
@@ -232,9 +232,9 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
       roomState = ConnectionState.CONNECTED;
 
       SignalingParameters parameters = new SignalingParameters(
-          // Ice servers are not needed for direct connections.
+          // Ice servers are not needed for direct connectionList.
           new LinkedList<PeerConnection.IceServer>(),
-          isServer, // Server side acts as the initiator on direct connections.
+          isServer, // Server side acts as the initiator on direct connectionList.
           null, // clientId
           null, // wssUrl
           null, // wwsPostUrl
@@ -268,7 +268,7 @@ public class DirectRTCClient implements AppRTCClient, TCPChannelClient.TCPChanne
             SessionDescription.Type.fromCanonicalForm(type), json.getString("sdp"));
 
         SignalingParameters parameters = new SignalingParameters(
-            // Ice servers are not needed for direct connections.
+            // Ice servers are not needed for direct connectionList.
             new LinkedList<PeerConnection.IceServer>(),
             false, // This code will only be run on the client side. So, we are not the initiator.
             null, // clientId

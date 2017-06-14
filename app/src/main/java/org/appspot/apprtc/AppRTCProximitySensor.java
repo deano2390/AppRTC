@@ -61,7 +61,7 @@ public class AppRTCProximitySensor implements SensorEventListener {
    */
   public boolean start() {
     threadChecker.checkIsOnValidThread();
-    Log.d(TAG, "start" + AppRTCUtils.getThreadInfo());
+    Log.d(TAG, "onStart" + AppRTCUtils.getThreadInfo());
     if (!initDefaultSensor()) {
       // Proximity sensor is not supported on this device.
       return false;
