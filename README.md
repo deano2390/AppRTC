@@ -4,6 +4,9 @@ A mirror of the WebRTC Android sample app using my pre-built WebRTC library http
 
 ![Screenshot](http://i.imgur.com/hT7qIuM.png)
 
+
+# License
+-------
 Copyright (c) 2011, The WebRTC project authors. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
