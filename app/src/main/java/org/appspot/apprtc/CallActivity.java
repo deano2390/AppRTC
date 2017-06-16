@@ -157,8 +157,11 @@ public class CallActivity extends Activity implements
     private final ProxyRenderer remoteProxyRenderer3 = new ProxyRenderer();
     private final ProxyRenderer remoteProxyRenderer4 = new ProxyRenderer();
     private final ProxyRenderer remoteProxyRenderer5 = new ProxyRenderer();
+    private final ProxyRenderer remoteProxyRenderer6 = new ProxyRenderer();
+    private final ProxyRenderer remoteProxyRenderer7 = new ProxyRenderer();
+    private final ProxyRenderer remoteProxyRenderer8 = new ProxyRenderer();
 
-    private SurfaceViewRenderer localRenderer, remoteRenderer1, remoteRenderer2, remoteRenderer3, remoteRenderer4, remoteRenderer5;
+    private SurfaceViewRenderer localRenderer, remoteRenderer1, remoteRenderer2, remoteRenderer3, remoteRenderer4, remoteRenderer5, remoteRenderer6, remoteRenderer7, remoteRenderer8;
 
     private AppRTCAudioManager audioManager = null;
     private EglBase rootEglBase;
@@ -239,6 +242,9 @@ public class CallActivity extends Activity implements
         remoteRenderer3 = (SurfaceViewRenderer) findViewById(R.id.box3);
         remoteRenderer4 = (SurfaceViewRenderer) findViewById(R.id.box4);
         remoteRenderer5 = (SurfaceViewRenderer) findViewById(R.id.box5);
+        remoteRenderer6 = (SurfaceViewRenderer) findViewById(R.id.box6);
+        remoteRenderer7 = (SurfaceViewRenderer) findViewById(R.id.box7);
+        remoteRenderer8 = (SurfaceViewRenderer) findViewById(R.id.box8);
 
         callFragment = new CallFragment();
         hudFragment = new HudFragment();
@@ -276,6 +282,9 @@ public class CallActivity extends Activity implements
         remoteRenderer3.init(rootEglBase.getEglBaseContext(), null);
         remoteRenderer4.init(rootEglBase.getEglBaseContext(), null);
         remoteRenderer5.init(rootEglBase.getEglBaseContext(), null);
+        remoteRenderer6.init(rootEglBase.getEglBaseContext(), null);
+        remoteRenderer7.init(rootEglBase.getEglBaseContext(), null);
+        remoteRenderer8.init(rootEglBase.getEglBaseContext(), null);
 
 
         localRenderer.setScalingType(ScalingType.SCALE_ASPECT_FIT);
@@ -285,6 +294,9 @@ public class CallActivity extends Activity implements
         remoteRenderer3.setScalingType(ScalingType.SCALE_ASPECT_FIT);
         remoteRenderer4.setScalingType(ScalingType.SCALE_ASPECT_FIT);
         remoteRenderer5.setScalingType(ScalingType.SCALE_ASPECT_FIT);
+        remoteRenderer6.setScalingType(ScalingType.SCALE_ASPECT_FIT);
+        remoteRenderer7.setScalingType(ScalingType.SCALE_ASPECT_FIT);
+        remoteRenderer8.setScalingType(ScalingType.SCALE_ASPECT_FIT);
 
         localRenderer.setEnableHardwareScaler(false);
         remoteRenderer1.setEnableHardwareScaler(false);
@@ -292,6 +304,9 @@ public class CallActivity extends Activity implements
         remoteRenderer3.setEnableHardwareScaler(false);
         remoteRenderer4.setEnableHardwareScaler(false);
         remoteRenderer5.setEnableHardwareScaler(false);
+        remoteRenderer6.setEnableHardwareScaler(false);
+        remoteRenderer7.setEnableHardwareScaler(false);
+        remoteRenderer8.setEnableHardwareScaler(false);
 
 
         //pipRenderer.init(rootEglBase.getEglBaseContext(), null);
@@ -328,6 +343,9 @@ public class CallActivity extends Activity implements
         remoteProxyRenderer3.setTarget(remoteRenderer3);
         remoteProxyRenderer4.setTarget(remoteRenderer4);
         remoteProxyRenderer5.setTarget(remoteRenderer5);
+        remoteProxyRenderer6.setTarget(remoteRenderer6);
+        remoteProxyRenderer7.setTarget(remoteRenderer7);
+        remoteProxyRenderer8.setTarget(remoteRenderer8);
 
         localRenderer.setMirror(true);
         remoteRenderer1.setMirror(false);
@@ -335,6 +353,10 @@ public class CallActivity extends Activity implements
         remoteRenderer3.setMirror(false);
         remoteRenderer4.setMirror(false);
         remoteRenderer5.setMirror(false);
+        remoteRenderer6.setMirror(false);
+        remoteRenderer7.setMirror(false);
+        remoteRenderer8.setMirror(false);
+
 
         // Check for mandatory permissions.
         for (String permission : MANDATORY_PERMISSIONS) {
@@ -413,6 +435,9 @@ public class CallActivity extends Activity implements
         String room3 = null;
         String room4 = null;
         String room5 = null;
+        String room6 = null;
+        String room7 = null;
+        String room8 = null;
 
 
         switch (userID) {
@@ -422,6 +447,9 @@ public class CallActivity extends Activity implements
                 room3 = roomID + "14";
                 room4 = roomID + "15";
                 room5 = roomID + "16";
+                room6 = roomID + "17";
+                room7 = roomID + "18";
+                room8 = roomID + "19";
                 break;
             case 2:
                 room1 = roomID + "12";
@@ -429,6 +457,9 @@ public class CallActivity extends Activity implements
                 room3 = roomID + "24";
                 room4 = roomID + "25";
                 room5 = roomID + "26";
+                room6 = roomID + "27";
+                room7 = roomID + "28";
+                room8 = roomID + "29";
                 break;
             case 3:
                 room1 = roomID + "13";
@@ -436,6 +467,9 @@ public class CallActivity extends Activity implements
                 room3 = roomID + "34";
                 room4 = roomID + "35";
                 room5 = roomID + "36";
+                room6 = roomID + "37";
+                room7 = roomID + "38";
+                room8 = roomID + "39";
                 break;
             case 4:
                 room1 = roomID + "14";
@@ -443,6 +477,9 @@ public class CallActivity extends Activity implements
                 room3 = roomID + "34";
                 room4 = roomID + "45";
                 room5 = roomID + "46";
+                room6 = roomID + "47";
+                room7 = roomID + "48";
+                room8 = roomID + "49";
                 break;
             case 5:
                 room1 = roomID + "15";
@@ -450,6 +487,9 @@ public class CallActivity extends Activity implements
                 room3 = roomID + "35";
                 room4 = roomID + "45";
                 room5 = roomID + "56";
+                room6 = roomID + "57";
+                room7 = roomID + "58";
+                room8 = roomID + "59";
                 break;
             case 6:
                 room1 = roomID + "16";
@@ -457,6 +497,42 @@ public class CallActivity extends Activity implements
                 room3 = roomID + "36";
                 room4 = roomID + "46";
                 room5 = roomID + "56";
+                room6 = roomID + "67";
+                room7 = roomID + "68";
+                room8 = roomID + "69";
+                break;
+
+            case 7:
+                room1 = roomID + "17";
+                room2 = roomID + "27";
+                room3 = roomID + "37";
+                room4 = roomID + "47";
+                room5 = roomID + "57";
+                room6 = roomID + "67";
+                room7 = roomID + "78";
+                room8 = roomID + "79";
+                break;
+
+            case 8:
+                room1 = roomID + "18";
+                room2 = roomID + "28";
+                room3 = roomID + "38";
+                room4 = roomID + "48";
+                room5 = roomID + "58";
+                room6 = roomID + "68";
+                room7 = roomID + "78";
+                room8 = roomID + "89";
+                break;
+
+            case 9:
+                room1 = roomID + "19";
+                room2 = roomID + "29";
+                room3 = roomID + "39";
+                room4 = roomID + "49";
+                room5 = roomID + "59";
+                room6 = roomID + "69";
+                room7 = roomID + "79";
+                room8 = roomID + "89";
                 break;
         }
 
@@ -467,11 +543,18 @@ public class CallActivity extends Activity implements
         Connection connection4 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room4, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer4, rootEglBase);
         Connection connection5 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room5, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer5, rootEglBase);
 
+        Connection connection6 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room6, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer6, rootEglBase);
+        Connection connection7 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room7, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer7, rootEglBase);
+        Connection connection8 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room8, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer8, rootEglBase);
+
         connectionList.add(connection1);
         connectionList.add(connection2);
         connectionList.add(connection3);
         connectionList.add(connection4);
         connectionList.add(connection5);
+        connectionList.add(connection6);
+        connectionList.add(connection7);
+        connectionList.add(connection8);
 
         // Create CPU monitor
         cpuMonitor = new CpuMonitor(this);
