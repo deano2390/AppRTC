@@ -33,8 +33,6 @@ import android.view.WindowManager.LayoutParams;
 import android.widget.Toast;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import org.appspot.apprtc.AppRTCAudioManager.AudioDevice;
@@ -47,6 +45,7 @@ import org.webrtc.CameraEnumerator;
 import org.webrtc.EglBase;
 import org.webrtc.FileVideoCapturer;
 import org.webrtc.Logging;
+import org.webrtc.PeerConnection;
 import org.webrtc.RendererCommon.ScalingType;
 import org.webrtc.ScreenCapturerAndroid;
 import org.webrtc.SurfaceViewRenderer;
@@ -74,8 +73,8 @@ public class CallActivity extends Activity implements
         }
     }
 
-    public static final String EXTRA_ROOMID_1 = "org.appspot.apprtc.ROOMID1";
-    public static final String EXTRA_ROOMID_2 = "org.appspot.apprtc.ROOMID2";
+    public static final String EXTRA_ROOMID = "org.appspot.apprtc.ROOMID";
+    public static final String EXTRA_USERID = "org.appspot.apprtc.USERID";
     public static final String EXTRA_LOOPBACK = "org.appspot.apprtc.LOOPBACK";
     public static final String EXTRA_VIDEO_CALL = "org.appspot.apprtc.VIDEO_CALL";
     public static final String EXTRA_SCREENCAPTURE = "org.appspot.apprtc.SCREENCAPTURE";
@@ -340,25 +339,17 @@ public class CallActivity extends Activity implements
         }
 
         // Get Intent parameters.
-        String room1 = intent.getStringExtra(EXTRA_ROOMID_1);
-        Log.d(TAG, "Room 1: " + room1);
-        if (room1 == null || room1.length() == 0) {
+        String roomID = intent.getStringExtra(EXTRA_ROOMID);
+        Log.d(TAG, "Room ID: " + roomID);
+        if (roomID == null || roomID.length() == 0) {
             logAndToast(getString(R.string.missing_url));
-            Log.e(TAG, "Incorrect room 1 in intent!");
+            Log.e(TAG, "Incorrect roomID in intent!");
             setResult(RESULT_CANCELED);
             finish();
             return;
         }
 
-        String room2 = intent.getStringExtra(EXTRA_ROOMID_2);
-        Log.d(TAG, "Room 2: " + room2);
-        if (room2 == null || room2.length() == 0) {
-            logAndToast(getString(R.string.missing_url));
-            Log.e(TAG, "Incorrect room 2 in intent!");
-            setResult(RESULT_CANCELED);
-            finish();
-            return;
-        }
+        int userID = intent.getIntExtra(EXTRA_USERID, 0);
 
         boolean loopback = intent.getBooleanExtra(EXTRA_LOOPBACK, false);
         boolean tracing = intent.getBooleanExtra(EXTRA_TRACING, false);
@@ -398,6 +389,27 @@ public class CallActivity extends Activity implements
         runTimeMs = intent.getIntExtra(EXTRA_RUNTIME, 0);
 
         Log.d(TAG, "VIDEO_FILE: '" + intent.getStringExtra(EXTRA_VIDEO_FILE_AS_CAMERA) + "'");
+
+
+        String room1 = roomID + "1";
+        String room2 = roomID + "2";
+
+
+        switch (userID) {
+            case 1:
+                room1 = roomID + "12";
+                room2 = roomID + "13";
+                break;
+            case 2:
+                room1 = roomID + "12";
+                room2 = roomID + "23";
+                break;
+            case 3:
+                room1 = roomID + "13";
+                room2 = roomID + "23";
+                break;
+        }
+
 
         Connection connection1 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room1, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer1, rootEglBase);
 
@@ -644,7 +656,7 @@ public class CallActivity extends Activity implements
         // Enable statistics callback.
 
         //peerConnectionClient1.enableStatsEvents(true, STAT_CALLBACK_PERIOD);
-      //  setSwappedFeeds(false /* isSwappedFeeds */);
+        //  setSwappedFeeds(false /* isSwappedFeeds */);
     }
 
     // This method is called when the audio manager reports audio device change,
@@ -691,6 +703,9 @@ public class CallActivity extends Activity implements
             remoteRenderer3 = null;
         }
 
+
+        PeerConnectionClient.closeMediaSources();
+        PeerConnectionClient.closeFactory();
 
         if (audioManager != null) {
             audioManager.stop();
@@ -753,7 +768,7 @@ public class CallActivity extends Activity implements
     synchronized VideoCapturer createVideoCapturer() {
 
 
-        if(videoCapturer != null){
+        if (videoCapturer != null) {
             return videoCapturer;
         }
 
@@ -786,4 +801,6 @@ public class CallActivity extends Activity implements
 
         return videoCapturer;
     }
+
+
 }

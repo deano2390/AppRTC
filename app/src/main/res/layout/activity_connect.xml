@@ -22,12 +22,11 @@
         android:layout_marginBottom="8dp">
 
         <EditText
-            android:id="@+id/room_edittext_1"
+            android:id="@+id/room_edittext"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:singleLine="true"
-            android:text="deano1"
             android:imeOptions="actionDone"
             android:inputType="text"/>
 
@@ -47,10 +46,9 @@
     </LinearLayout>
 
     <EditText
-        android:id="@+id/room_edittext_2"
+        android:id="@+id/user_edittext"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="deano2"
         android:singleLine="true"
         android:imeOptions="actionDone"
         android:inputType="text"/>

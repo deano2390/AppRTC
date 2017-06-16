@@ -58,8 +58,6 @@ class Connections extends ArrayList<Connection> {
 
     public boolean areAllDisconnected() {
 
-        boolean allDisconnected = false;
-
         Iterator<Connection> it = iterator();
         while (it.hasNext()) {
             Connection next = it.next();

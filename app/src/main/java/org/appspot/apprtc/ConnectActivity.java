@@ -49,8 +49,8 @@ public class ConnectActivity extends Activity {
 
   private ImageButton connectButton;
   private ImageButton addFavoriteButton;
-  private EditText roomEditText1;
-  private EditText roomEditText2;
+  private EditText roomEditText;
+  private EditText userEditText;
   private ListView roomListView;
   private SharedPreferences sharedPref;
   private String keyprefVideoCallEnabled;
@@ -89,6 +89,7 @@ public class ConnectActivity extends Activity {
   private String keyprefDataProtocol;
   private String keyprefNegotiated;
   private String keyprefDataId;
+  private int userID;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -134,9 +135,9 @@ public class ConnectActivity extends Activity {
 
     setContentView(R.layout.activity_connect);
 
-    roomEditText1 = (EditText) findViewById(R.id.room_edittext_1);
-    roomEditText2 = (EditText) findViewById(R.id.room_edittext_2);
-    roomEditText1.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+    roomEditText = (EditText) findViewById(R.id.room_edittext);
+    userEditText = (EditText) findViewById(R.id.user_edittext);
+    roomEditText.setOnEditorActionListener(new TextView.OnEditorActionListener() {
       @Override
       public boolean onEditorAction(TextView textView, int i, KeyEvent keyEvent) {
         if (i == EditorInfo.IME_ACTION_DONE) {
@@ -146,7 +147,7 @@ public class ConnectActivity extends Activity {
         return false;
       }
     });
-    roomEditText1.requestFocus();
+    roomEditText.requestFocus();
 
     roomListView = (ListView) findViewById(R.id.room_listview);
     roomListView.setEmptyView(findViewById(android.R.id.empty));
@@ -220,7 +221,7 @@ public class ConnectActivity extends Activity {
   @Override
   public void onPause() {
     super.onPause();
-    String room = roomEditText1.getText().toString();
+    String room = roomEditText.getText().toString();
     String roomListJson = new JSONArray(roomList).toString();
     SharedPreferences.Editor editor = sharedPref.edit();
     editor.putString(keyprefRoom, room);
@@ -232,7 +233,7 @@ public class ConnectActivity extends Activity {
   public void onResume() {
     super.onResume();
     String room = sharedPref.getString(keyprefRoom, "");
-    roomEditText1.setText(room);
+    roomEditText.setText(room);
     roomList = new ArrayList<String>();
     String roomListJson = sharedPref.getString(keyprefRoomList, null);
     if (roomListJson != null) {
@@ -319,13 +320,13 @@ public class ConnectActivity extends Activity {
     }
   }
 
-  private void connectToRoom(String room1, String room2, boolean commandLineRun, boolean loopback,
+  private void connectToRoom(String roomID, int userID, boolean commandLineRun, boolean loopback,
       boolean useValuesFromIntent, int runTimeMs) {
     this.commandLineRun = commandLineRun;
 
     // roomId is random for loopback.
     if (loopback) {
-      room1 = Integer.toString((new Random()).nextInt(100000000));
+      roomID = Integer.toString((new Random()).nextInt(100000000));
     }
 
     String roomUrl = sharedPref.getString(
@@ -497,14 +498,13 @@ public class ConnectActivity extends Activity {
         CallActivity.EXTRA_PROTOCOL, R.string.pref_data_protocol_default, useValuesFromIntent);
 
     // Start AppRTCMobile activity.
-    Log.d(TAG, "Connecting to room1 " + room1 + " at URL " + roomUrl);
-    Log.d(TAG, "Connecting to room2 " + room2 + " at URL " + roomUrl);
+    Log.d(TAG, "Connecting to room " + roomID + " at URL " + roomUrl);
     if (validateUrl(roomUrl)) {
       Uri uri = Uri.parse(roomUrl);
       Intent intent = new Intent(this, CallActivity.class);
       intent.setData(uri);
-      intent.putExtra(CallActivity.EXTRA_ROOMID_1, room1);
-      intent.putExtra(CallActivity.EXTRA_ROOMID_2, room2);
+      intent.putExtra(CallActivity.EXTRA_ROOMID, roomID);
+      intent.putExtra(CallActivity.EXTRA_USERID, userID);
       intent.putExtra(CallActivity.EXTRA_LOOPBACK, loopback);
       intent.putExtra(CallActivity.EXTRA_VIDEO_CALL, videoCallEnabled);
       intent.putExtra(CallActivity.EXTRA_SCREENCAPTURE, useScreencapture);
@@ -605,7 +605,7 @@ public class ConnectActivity extends Activity {
   private final OnClickListener addFavoriteListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
-      String newRoom = roomEditText1.getText().toString();
+      String newRoom = roomEditText.getText().toString();
       if (newRoom.length() > 0 && !roomList.contains(newRoom)) {
         adapter.add(newRoom);
         adapter.notifyDataSetChanged();
@@ -616,7 +616,7 @@ public class ConnectActivity extends Activity {
   private final OnClickListener connectListener = new OnClickListener() {
     @Override
     public void onClick(View view) {
-      connectToRoom(roomEditText1.getText().toString(), roomEditText2.getText().toString(), false, false, false, 0);
+      connectToRoom(roomEditText.getText().toString(), Integer.parseInt(userEditText.getText().toString()), false, false, false, 0);
     }
   };
 }

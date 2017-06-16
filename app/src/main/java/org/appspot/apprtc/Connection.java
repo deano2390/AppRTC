@@ -1,6 +1,5 @@
 package org.appspot.apprtc;
 
-import android.app.Activity;
 import android.net.Uri;
 import android.util.Log;
 
@@ -9,7 +8,6 @@ import org.webrtc.IceCandidate;
 import org.webrtc.PeerConnectionFactory;
 import org.webrtc.SessionDescription;
 import org.webrtc.StatsReport;
-import org.webrtc.SurfaceViewRenderer;
 import org.webrtc.VideoCapturer;
 
 /**
@@ -74,7 +72,7 @@ public class Connection {
         }
 
         peerConnectionClient.createPeerConnectionFactory(
-                activity.getApplicationContext(), peerConnectionParameters, peerConnectionEvents);
+                activity.getApplicationContext(), peerConnectionParameters, peerConnectionEvents, rootEglBase.getEglBaseContext());
     }
 
     void runOnUiThread(Runnable runnable){
@@ -115,7 +113,6 @@ public class Connection {
             }
 
             peerConnectionClient.createPeerConnection(
-                    rootEglBase.getEglBaseContext(),
                     localProxyRenderer,
                     remoteProxyRenderer,
                     videoCapturer,

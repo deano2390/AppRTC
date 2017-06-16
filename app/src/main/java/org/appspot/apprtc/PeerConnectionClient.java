@@ -99,17 +99,14 @@ public class PeerConnectionClient {
     private static final PeerConnectionClient instance = new PeerConnectionClient();
     private final PCObserver pcObserver = new PCObserver();
     private final SDPObserver sdpObserver = new SDPObserver();
-    private static ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
-    private static PeerConnectionFactory factory;
     private PeerConnection peerConnection;
     PeerConnectionFactory.Options options = null;
-    private AudioSource audioSource;
-    private VideoSource videoSource;
+
     private boolean videoCallEnabled;
     private boolean preferIsac;
     private String preferredVideoCodec;
-    private boolean videoCapturerStopped;
+
     private boolean isError;
     private Timer statsTimer;
     private VideoRenderer.Callbacks localRender;
@@ -130,18 +127,32 @@ public class PeerConnectionClient {
     private PeerConnectionEvents events;
     private boolean isInitiator;
     private SessionDescription localSdp; // either offer or answer SDP
-    private static MediaStream mediaStream;
-    private VideoCapturer videoCapturer;
+
     // enableVideo is set to true if video should be rendered and sent.
     private boolean renderVideo;
-    private VideoTrack localVideoTrack;
+
     private VideoTrack remoteVideoTrack;
     private RtpSender localVideoSender;
     // enableAudio is set to true if audio should be sent.
     private boolean enableAudio;
-    private AudioTrack localAudioTrack;
+
     private DataChannel dataChannel;
     private boolean dataChannelEnabled;
+
+
+    /**
+     * Shared statics - shared between multiple peerconnections
+     */
+    private static ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private static PeerConnectionFactory factory;
+    static ArrayList<PeerConnection> peerConnections = new ArrayList<>();
+    private static AudioSource audioSource;
+    private static VideoSource videoSource;
+    private static MediaStream mediaStream;
+    private static VideoCapturer videoCapturer;
+    private static VideoTrack localVideoTrack;
+    private static AudioTrack localAudioTrack;
+    private static boolean videoCapturerStopped;
 
     /**
      * Peer connection parameters.
@@ -295,46 +306,40 @@ public class PeerConnectionClient {
     }
 
     public void createPeerConnectionFactory(final Context context,
-                                            final PeerConnectionParameters peerConnectionParameters, final PeerConnectionEvents events) {
+                                            final PeerConnectionParameters peerConnectionParameters,
+                                            final PeerConnectionEvents events, final EglBase.Context renderEGLContext) {
         this.peerConnectionParameters = peerConnectionParameters;
         this.events = events;
         videoCallEnabled = peerConnectionParameters.videoCallEnabled;
         dataChannelEnabled = peerConnectionParameters.dataChannelParameters != null;
         // Reset variables to initial states.
-        factory = null;
+
         peerConnection = null;
         preferIsac = false;
-        videoCapturerStopped = false;
+
         isError = false;
         queuedRemoteCandidates = null;
         localSdp = null; // either offer or answer SDP
-        mediaStream = null;
-        videoCapturer = null;
         renderVideo = true;
-        localVideoTrack = null;
         remoteVideoTrack = null;
-        localVideoSender = null;
         enableAudio = true;
-        localAudioTrack = null;
         statsTimer = new Timer();
 
         executor.execute(new Runnable() {
             @Override
             public void run() {
-                createPeerConnectionFactoryInternal(context);
+                createPeerConnectionFactoryInternal(context, renderEGLContext);
             }
         });
     }
 
-    public void createPeerConnection(final EglBase.Context renderEGLContext,
-                                     final VideoRenderer.Callbacks localRender, final VideoRenderer.Callbacks remoteRender,
+    public void createPeerConnection(final VideoRenderer.Callbacks localRender, final VideoRenderer.Callbacks remoteRender,
                                      final VideoCapturer videoCapturer, final SignalingParameters signalingParameters) {
-        createPeerConnection(renderEGLContext, localRender, Collections.singletonList(remoteRender),
+        createPeerConnection(localRender, Collections.singletonList(remoteRender),
                 videoCapturer, signalingParameters);
     }
 
-    public void createPeerConnection(final EglBase.Context renderEGLContext,
-                                     final VideoRenderer.Callbacks localRender, final List<VideoRenderer.Callbacks> remoteRenders,
+    public void createPeerConnection(final VideoRenderer.Callbacks localRender, final List<VideoRenderer.Callbacks> remoteRenders,
                                      final VideoCapturer videoCapturer, final SignalingParameters signalingParameters) {
         if (peerConnectionParameters == null) {
             Log.e(TAG, "Creating peer connection without initializing factory.");
@@ -349,7 +354,7 @@ public class PeerConnectionClient {
             public void run() {
                 try {
                     createMediaConstraintsInternal();
-                    createPeerConnectionInternal(renderEGLContext);
+                    createPeerConnectionInternal();
                 } catch (Exception e) {
                     reportError("Failed to create peer connection: " + e.getMessage());
                     throw e;
@@ -371,120 +376,126 @@ public class PeerConnectionClient {
         return videoCallEnabled;
     }
 
-    synchronized void createPeerConnectionFactoryInternal(Context context) {
+    synchronized PeerConnectionFactory createPeerConnectionFactoryInternal(Context context, EglBase.Context renderEGLContext) {
 
-        if (factory != null) return; // we only need one factory
+        if (factory == null) { // we only need one factory
 
-        PeerConnectionFactory.initializeInternalTracer();
+        /*PeerConnectionFactory.initializeInternalTracer();
         if (peerConnectionParameters.tracing) {
             PeerConnectionFactory.startInternalTracingCapture(
                     Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
                             + "webrtc-trace.txt");
-        }
-        Log.d(TAG,
-                "Create peer connection factory. Use video: " + peerConnectionParameters.videoCallEnabled);
-        isError = false;
+        }*/
+            Log.d(TAG,
+                    "Create peer connection factory. Use video: " + peerConnectionParameters.videoCallEnabled);
+            isError = false;
 
-        // Initialize field trials.
-        String fieldTrials = "";
-        if (peerConnectionParameters.videoFlexfecEnabled) {
-            fieldTrials += VIDEO_FLEXFEC_FIELDTRIAL;
-            Log.d(TAG, "Enable FlexFEC field trial.");
-        }
-        fieldTrials += VIDEO_VP8_INTEL_HW_ENCODER_FIELDTRIAL;
-
-        // Check preferred video codec.
-        preferredVideoCodec = VIDEO_CODEC_VP8;
-        if (videoCallEnabled && peerConnectionParameters.videoCodec != null) {
-            switch (peerConnectionParameters.videoCodec) {
-                case VIDEO_CODEC_VP8:
-                    preferredVideoCodec = VIDEO_CODEC_VP8;
-                    break;
-                case VIDEO_CODEC_VP9:
-                    preferredVideoCodec = VIDEO_CODEC_VP9;
-                    break;
-                case VIDEO_CODEC_H264_BASELINE:
-                    preferredVideoCodec = VIDEO_CODEC_H264;
-                    break;
-                case VIDEO_CODEC_H264_HIGH:
-                    // TODO(magjed): Strip High from SDP when selecting Baseline instead of using field trial.
-                    fieldTrials += VIDEO_H264_HIGH_PROFILE_FIELDTRIAL;
-                    preferredVideoCodec = VIDEO_CODEC_H264;
-                    break;
-                default:
-                    preferredVideoCodec = VIDEO_CODEC_VP8;
+            // Initialize field trials.
+            String fieldTrials = "";
+            if (peerConnectionParameters.videoFlexfecEnabled) {
+                fieldTrials += VIDEO_FLEXFEC_FIELDTRIAL;
+                Log.d(TAG, "Enable FlexFEC field trial.");
             }
-        }
-        Log.d(TAG, "Preferred video codec: " + preferredVideoCodec);
-        PeerConnectionFactory.initializeFieldTrials(fieldTrials);
-        Log.d(TAG, "Field trials: " + fieldTrials);
+            fieldTrials += VIDEO_VP8_INTEL_HW_ENCODER_FIELDTRIAL;
 
-        // Check if ISAC is used by default.
-        preferIsac = peerConnectionParameters.audioCodec != null
-                && peerConnectionParameters.audioCodec.equals(AUDIO_CODEC_ISAC);
+            // Check preferred video codec.
+            preferredVideoCodec = VIDEO_CODEC_VP8;
+            if (videoCallEnabled && peerConnectionParameters.videoCodec != null) {
+                switch (peerConnectionParameters.videoCodec) {
+                    case VIDEO_CODEC_VP8:
+                        preferredVideoCodec = VIDEO_CODEC_VP8;
+                        break;
+                    case VIDEO_CODEC_VP9:
+                        preferredVideoCodec = VIDEO_CODEC_VP9;
+                        break;
+                    case VIDEO_CODEC_H264_BASELINE:
+                        preferredVideoCodec = VIDEO_CODEC_H264;
+                        break;
+                    case VIDEO_CODEC_H264_HIGH:
+                        // TODO(magjed): Strip High from SDP when selecting Baseline instead of using field trial.
+                        fieldTrials += VIDEO_H264_HIGH_PROFILE_FIELDTRIAL;
+                        preferredVideoCodec = VIDEO_CODEC_H264;
+                        break;
+                    default:
+                        preferredVideoCodec = VIDEO_CODEC_VP8;
+                }
+            }
+            Log.d(TAG, "Preferred video codec: " + preferredVideoCodec);
+            PeerConnectionFactory.initializeFieldTrials(fieldTrials);
+            Log.d(TAG, "Field trials: " + fieldTrials);
 
-        // Enable/disable OpenSL ES playback.
-        if (!peerConnectionParameters.useOpenSLES) {
-            Log.d(TAG, "Disable OpenSL ES audio even if device supports it");
-            WebRtcAudioManager.setBlacklistDeviceForOpenSLESUsage(true /* enable */);
-        } else {
-            Log.d(TAG, "Allow OpenSL ES audio if device supports it");
-            WebRtcAudioManager.setBlacklistDeviceForOpenSLESUsage(false);
-        }
+            // Check if ISAC is used by default.
+            preferIsac = peerConnectionParameters.audioCodec != null
+                    && peerConnectionParameters.audioCodec.equals(AUDIO_CODEC_ISAC);
 
-        if (peerConnectionParameters.disableBuiltInAEC) {
-            Log.d(TAG, "Disable built-in AEC even if device supports it");
-            WebRtcAudioUtils.setWebRtcBasedAcousticEchoCanceler(true);
-        } else {
-            Log.d(TAG, "Enable built-in AEC if device supports it");
-            WebRtcAudioUtils.setWebRtcBasedAcousticEchoCanceler(false);
-        }
-
-        if (peerConnectionParameters.disableBuiltInAGC) {
-            Log.d(TAG, "Disable built-in AGC even if device supports it");
-            WebRtcAudioUtils.setWebRtcBasedAutomaticGainControl(true);
-        } else {
-            Log.d(TAG, "Enable built-in AGC if device supports it");
-            WebRtcAudioUtils.setWebRtcBasedAutomaticGainControl(false);
-        }
-
-        if (peerConnectionParameters.disableBuiltInNS) {
-            Log.d(TAG, "Disable built-in NS even if device supports it");
-            WebRtcAudioUtils.setWebRtcBasedNoiseSuppressor(true);
-        } else {
-            Log.d(TAG, "Enable built-in NS if device supports it");
-            WebRtcAudioUtils.setWebRtcBasedNoiseSuppressor(false);
-        }
-
-        // Set audio record error callbacks.
-        WebRtcAudioRecord.setErrorCallback(new WebRtcAudioRecordErrorCallback() {
-            @Override
-            public void onWebRtcAudioRecordInitError(String errorMessage) {
-                Log.e(TAG, "onWebRtcAudioRecordInitError: " + errorMessage);
-                reportError(errorMessage);
+            // Enable/disable OpenSL ES playback.
+            if (!peerConnectionParameters.useOpenSLES) {
+                Log.d(TAG, "Disable OpenSL ES audio even if device supports it");
+                WebRtcAudioManager.setBlacklistDeviceForOpenSLESUsage(true /* enable */);
+            } else {
+                Log.d(TAG, "Allow OpenSL ES audio if device supports it");
+                WebRtcAudioManager.setBlacklistDeviceForOpenSLESUsage(false);
             }
 
-            @Override
-            public void onWebRtcAudioRecordStartError(String errorMessage) {
-                Log.e(TAG, "onWebRtcAudioRecordStartError: " + errorMessage);
-                reportError(errorMessage);
+            if (peerConnectionParameters.disableBuiltInAEC) {
+                Log.d(TAG, "Disable built-in AEC even if device supports it");
+                WebRtcAudioUtils.setWebRtcBasedAcousticEchoCanceler(true);
+            } else {
+                Log.d(TAG, "Enable built-in AEC if device supports it");
+                WebRtcAudioUtils.setWebRtcBasedAcousticEchoCanceler(false);
             }
 
-            @Override
-            public void onWebRtcAudioRecordError(String errorMessage) {
-                Log.e(TAG, "onWebRtcAudioRecordError: " + errorMessage);
-                reportError(errorMessage);
+            if (peerConnectionParameters.disableBuiltInAGC) {
+                Log.d(TAG, "Disable built-in AGC even if device supports it");
+                WebRtcAudioUtils.setWebRtcBasedAutomaticGainControl(true);
+            } else {
+                Log.d(TAG, "Enable built-in AGC if device supports it");
+                WebRtcAudioUtils.setWebRtcBasedAutomaticGainControl(false);
             }
-        });
 
-        // Create peer connection factory.
-        PeerConnectionFactory.initializeAndroidGlobals(
-                context, peerConnectionParameters.videoCodecHwAcceleration);
-        if (options != null) {
-            Log.d(TAG, "Factory networkIgnoreMask option: " + options.networkIgnoreMask);
+            if (peerConnectionParameters.disableBuiltInNS) {
+                Log.d(TAG, "Disable built-in NS even if device supports it");
+                WebRtcAudioUtils.setWebRtcBasedNoiseSuppressor(true);
+            } else {
+                Log.d(TAG, "Enable built-in NS if device supports it");
+                WebRtcAudioUtils.setWebRtcBasedNoiseSuppressor(false);
+            }
+
+            // Set audio record error callbacks.
+            WebRtcAudioRecord.setErrorCallback(new WebRtcAudioRecordErrorCallback() {
+                @Override
+                public void onWebRtcAudioRecordInitError(String errorMessage) {
+                    Log.e(TAG, "onWebRtcAudioRecordInitError: " + errorMessage);
+                    reportError(errorMessage);
+                }
+
+                @Override
+                public void onWebRtcAudioRecordStartError(String errorMessage) {
+                    Log.e(TAG, "onWebRtcAudioRecordStartError: " + errorMessage);
+                    reportError(errorMessage);
+                }
+
+                @Override
+                public void onWebRtcAudioRecordError(String errorMessage) {
+                    Log.e(TAG, "onWebRtcAudioRecordError: " + errorMessage);
+                    reportError(errorMessage);
+                }
+            });
+
+            // Create peer connection factory.
+            PeerConnectionFactory.initializeAndroidGlobals(
+                    context, peerConnectionParameters.videoCodecHwAcceleration);
+            if (options != null) {
+                Log.d(TAG, "Factory networkIgnoreMask option: " + options.networkIgnoreMask);
+            }
+
+            factory = new PeerConnectionFactory(options);
+            Log.d(TAG, "Peer connection factory created.");
+
+            factory.setVideoHwAccelerationOptions(renderEGLContext, renderEGLContext);
         }
-        factory = new PeerConnectionFactory(options);
-        Log.d(TAG, "Peer connection factory created.");
+
+        return factory;
     }
 
     private void createMediaConstraintsInternal() {
@@ -555,7 +566,7 @@ public class PeerConnectionClient {
         }
     }
 
-    private void createPeerConnectionInternal(EglBase.Context renderEGLContext) {
+    private void createPeerConnectionInternal() {
         if (factory == null || isError) {
             Log.e(TAG, "Peerconnection factory is not created");
             return;
@@ -565,10 +576,10 @@ public class PeerConnectionClient {
         Log.d(TAG, "PCConstraints: " + pcConstraints.toString());
         queuedRemoteCandidates = new LinkedList<IceCandidate>();
 
-        if (videoCallEnabled) {
+      /*  if (videoCallEnabled) {
             Log.d(TAG, "EGLContext: " + renderEGLContext);
             factory.setVideoHwAccelerationOptions(renderEGLContext, renderEGLContext);
-        }
+        }*/
 
         PeerConnection.RTCConfiguration rtcConfig =
                 new PeerConnection.RTCConfiguration(signalingParameters.iceServers);
@@ -600,9 +611,10 @@ public class PeerConnectionClient {
         Logging.enableTracing("logcat:", EnumSet.of(Logging.TraceLevel.TRACE_DEFAULT));
         Logging.enableLogToDebugOutput(Logging.Severity.LS_INFO);
 
-        addStreams();
+        createMediaStream();
 
         peerConnection.addStream(mediaStream);
+
         if (videoCallEnabled) {
             findVideoSender();
         }
@@ -620,40 +632,63 @@ public class PeerConnectionClient {
             }
         }
 
+        peerConnections.add(peerConnection);
+
         Log.d(TAG, "Peer connection created.");
     }
 
-    private void addStreams() {
+    private MediaStream createMediaStream() {
         if (mediaStream == null) {
+
             mediaStream = factory.createLocalMediaStream("ARDAMS");
+
             if (videoCallEnabled) {
                 mediaStream.addTrack(createVideoTrack(videoCapturer));
             }
 
             mediaStream.addTrack(createAudioTrack());
         }
+
+        return mediaStream;
     }
 
     private void closeInternal() {
+
         if (factory != null && peerConnectionParameters.aecDump) {
             factory.stopAecDump();
         }
+
         Log.d(TAG, "Closing peer connection.");
+
         statsTimer.cancel();
+
         if (dataChannel != null) {
             dataChannel.dispose();
             dataChannel = null;
         }
-        if (peerConnection != null) {
-            peerConnection.dispose();
-            peerConnection = null;
-        }
+
+        localRender = null;
+        remoteRenders = null;
+
+        options = null;
+
+        Log.d(TAG, "Closing peer connection done.");
+
+        events.onPeerConnectionClosed();
+
+        events = null;
+    }
+
+    public static void closeMediaSources() {
         Log.d(TAG, "Closing audio source.");
+
         if (audioSource != null) {
             audioSource.dispose();
             audioSource = null;
         }
+
         Log.d(TAG, "Stopping capture.");
+
         if (videoCapturer != null) {
             try {
                 videoCapturer.stopCapture();
@@ -664,24 +699,65 @@ public class PeerConnectionClient {
             videoCapturer.dispose();
             videoCapturer = null;
         }
+
         Log.d(TAG, "Closing video source.");
+
         if (videoSource != null) {
             videoSource.dispose();
             videoSource = null;
         }
-        localRender = null;
-        remoteRenders = null;
-        Log.d(TAG, "Closing peer connection factory.");
-        if (factory != null) {
-            factory.dispose();
-            factory = null;
-        }
-        options = null;
-        Log.d(TAG, "Closing peer connection done.");
-        events.onPeerConnectionClosed();
-        PeerConnectionFactory.stopInternalTracingCapture();
-        PeerConnectionFactory.shutdownInternalTracer();
-        events = null;
+    }
+
+    public static void closeFactory() {
+        executor.execute(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG, "Closing peer connection factory.");
+
+
+                Iterator<PeerConnection> it = peerConnections.iterator();
+
+                if(localAudioTrack != null){
+                    mediaStream.removeTrack(localAudioTrack);
+                    localAudioTrack.dispose();
+                    localAudioTrack = null;
+                }
+
+                if(localVideoTrack != null) {
+                    mediaStream.removeTrack(localVideoTrack);
+                    localVideoTrack.dispose();
+                    localVideoTrack = null;
+                }
+
+                if (audioSource != null) {
+                    audioSource.dispose();
+                    audioSource = null;
+                }
+
+                if (videoSource != null) {
+                    videoSource.dispose();
+                    videoSource = null;
+                }
+
+                while (it.hasNext()) {
+                    PeerConnection next = it.next();
+                    next.removeStream(mediaStream);
+                    next.dispose();
+                }
+
+                mediaStream = null;
+
+                peerConnections.clear();
+
+                if (factory != null) {
+                    factory.dispose();
+                    factory = null;
+                }
+
+                //PeerConnectionFactory.stopInternalTracingCapture();
+                //PeerConnectionFactory.shutdownInternalTracer();
+            }
+        });
     }
 
     public boolean isHDVideo() {
@@ -911,19 +987,30 @@ public class PeerConnectionClient {
     }
 
     private AudioTrack createAudioTrack() {
-        audioSource = factory.createAudioSource(audioConstraints);
-        localAudioTrack = factory.createAudioTrack(AUDIO_TRACK_ID, audioSource);
-        localAudioTrack.setEnabled(enableAudio);
+        if (audioSource == null) {
+            audioSource = factory.createAudioSource(audioConstraints);
+        }
+
+        if (localAudioTrack == null) {
+            localAudioTrack = factory.createAudioTrack(AUDIO_TRACK_ID, audioSource);
+            localAudioTrack.setEnabled(enableAudio);
+        }
+
         return localAudioTrack;
     }
 
     private VideoTrack createVideoTrack(VideoCapturer capturer) {
-        videoSource = factory.createVideoSource(capturer);
-        capturer.startCapture(videoWidth, videoHeight, videoFps);
+        if (videoSource == null) {
+            videoSource = factory.createVideoSource(capturer);
+            capturer.startCapture(videoWidth, videoHeight, videoFps);
+        }
 
-        localVideoTrack = factory.createVideoTrack(VIDEO_TRACK_ID, videoSource);
-        localVideoTrack.setEnabled(renderVideo);
-        localVideoTrack.addRenderer(new VideoRenderer(localRender));
+        if (localVideoTrack == null) {
+            localVideoTrack = factory.createVideoTrack(VIDEO_TRACK_ID, videoSource);
+            localVideoTrack.setEnabled(renderVideo);
+            localVideoTrack.addRenderer(new VideoRenderer(localRender));
+        }
+
         return localVideoTrack;
     }
 
