@@ -391,32 +391,42 @@ public class CallActivity extends Activity implements
         Log.d(TAG, "VIDEO_FILE: '" + intent.getStringExtra(EXTRA_VIDEO_FILE_AS_CAMERA) + "'");
 
 
-        String room1 = roomID + "1";
-        String room2 = roomID + "2";
+        String room1 = null;
+        String room2 = null;
+        String room3 = null;
 
 
         switch (userID) {
             case 1:
                 room1 = roomID + "12";
                 room2 = roomID + "13";
+                room3 = roomID + "14";
                 break;
             case 2:
                 room1 = roomID + "12";
                 room2 = roomID + "23";
+                room3 = roomID + "24";
                 break;
             case 3:
                 room1 = roomID + "13";
                 room2 = roomID + "23";
+                room3 = roomID + "34";
+                break;
+            case 4:
+                room1 = roomID + "14";
+                room2 = roomID + "24";
+                room3 = roomID + "34";
                 break;
         }
 
 
         Connection connection1 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room1, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer1, rootEglBase);
-
         Connection connection2 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room2, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer2, rootEglBase);
+        Connection connection3 = new Connection(this, peerConnectionParameters, loopback, screencaptureEnabled, room3, roomUri, connectionListener, locProxyRenderer, remoteProxyRenderer3, rootEglBase);
 
         connectionList.add(connection1);
         connectionList.add(connection2);
+        connectionList.add(connection3);
 
         // Create CPU monitor
         cpuMonitor = new CpuMonitor(this);
