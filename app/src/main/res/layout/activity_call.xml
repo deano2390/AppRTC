@@ -14,16 +14,16 @@
             android:layout_weight="1">
 
             <org.webrtc.SurfaceViewRenderer
-                android:id="@+id/box1"
+                android:id="@+id/box_local"
                 android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
 
             <org.webrtc.SurfaceViewRenderer
-                android:id="@+id/box2"
+                android:id="@+id/box1"
                 android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
 
 
         </LinearLayout>
@@ -34,16 +34,38 @@
             android:layout_weight="1">
 
             <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/box2"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+            <org.webrtc.SurfaceViewRenderer
                 android:id="@+id/box3"
                 android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+
+        </LinearLayout>
+
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
 
             <org.webrtc.SurfaceViewRenderer
                 android:id="@+id/box4"
                 android:layout_width="0dp"
-                android:layout_weight="1"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+            <org.webrtc.SurfaceViewRenderer
+                android:id="@+id/box5"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
 
         </LinearLayout>
     </LinearLayout>
