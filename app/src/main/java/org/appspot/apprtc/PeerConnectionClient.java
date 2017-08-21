@@ -714,9 +714,6 @@ public class PeerConnectionClient {
             public void run() {
                 Log.d(TAG, "Closing peer connection factory.");
 
-
-                Iterator<PeerConnection> it = peerConnections.iterator();
-
                 if(localAudioTrack != null){
                     mediaStream.removeTrack(localAudioTrack);
                     localAudioTrack.dispose();
@@ -739,6 +736,7 @@ public class PeerConnectionClient {
                     videoSource = null;
                 }
 
+                Iterator<PeerConnection> it = peerConnections.iterator();
                 while (it.hasNext()) {
                     PeerConnection next = it.next();
                     next.removeStream(mediaStream);
