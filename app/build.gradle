@@ -20,5 +20,6 @@ android {
 
 dependencies {
     compile 'com.android.support:support-v4:25.3.1'
-    compile 'com.github.deano2390:libwebrtc-android:59-vanilla'
+    //compile 'com.github.deano2390:libwebrtc-android:61-vanilla'
+    compile project(':libwebrtc_android')
 }
