@@ -16,10 +16,13 @@ android {
         }
     }
 
+   /* compileOptions {
+        targetCompatibility 1.8
+        sourceCompatibility 1.8
+    }*/
 }
 
 dependencies {
     compile 'com.android.support:support-v4:25.3.1'
-    //compile 'com.github.deano2390:libwebrtc-android:61-vanilla'
     compile project(':libwebrtc_android')
 }
